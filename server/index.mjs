@@ -64,4 +64,22 @@ fastify.get('/events', (request, reply) => {
   reply.from('/events')
 })
 
+fastify.post('/chat', async (request, reply) => {
+  const user = listeners.get(String(request.body.sid))
+  if (!user) {
+    return reply.code(400).send('Invalid sid')
+  }
+  const text = request.body.text
+  const name = user.name
+  request.log.info(`Send chat: [${name}] ${text}`)
+  await client.post('/chat', { message: `[${name}] ${text}` })
+  return { ok: true }
+})
+
+fastify.get('/listeners', async (request, reply) => {
+  return Array.from(listeners).map(([k, v]) => ({
+    name: v.name,
+  }))
+})
+
 fastify.listen({ port: 9998 })

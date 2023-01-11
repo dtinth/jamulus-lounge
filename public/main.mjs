@@ -6,8 +6,44 @@ import {
   useEffect,
 } from 'https://cdn.jsdelivr.net/npm/htm@3.1.1/preact/standalone.module.js'
 
-let sid = ''
-let listenerName = localStorage.jamulusLoungeListenerName || ''
+let flagSet
+export function isQueryFlagEnabled(flagName) {
+  if (!flagSet) {
+    flagSet = new Set(
+      (new URLSearchParams(window.location.search).get('flags') || '')
+        .split(',')
+        .filter(Boolean),
+    )
+  }
+  return flagSet.has(flagName)
+}
+
+function createAtom(v) {
+  const a = {
+    listeners: new Set(),
+    get value() {
+      return v
+    },
+    set value(newValue) {
+      v = newValue
+      a.listeners.forEach((l) => l())
+    },
+    subscribe(listener) {
+      a.listeners.add(listener)
+      return () => a.listeners.delete(listener)
+    },
+  }
+  return a
+}
+function useAtom(a) {
+  const [, set] = useState()
+  useEffect(() => a.subscribe(() => set({})), [a])
+  return a.value
+}
+
+let sid = createAtom('')
+let nameAsked = false
+let listenerName = createAtom(localStorage.jamulusLoungeListenerName || '')
 let getActionDelay = () => 0
 
 const server = new URLSearchParams(location.search).get('apiserver') || '.'
@@ -27,17 +63,29 @@ function handleData(data) {
   if (data.levels) {
     currentData.levels = data.levels
   }
+  if (data.newChatMessage) {
+    console.log('[New chat message]', data.newChatMessage)
+    // Dispatch a DOM event
+    const event = new CustomEvent('jamuluschat', {
+      detail: data.newChatMessage,
+    })
+    document.dispatchEvent(event)
+  }
   if (currentData.clients) {
     render(
-      html`<div class="d-flex gap-2 flex-column">
+      html`<div
+        class="gap-3 flex-column"
+        style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));"
+      >
         ${currentData.clients.map((c, i) => {
           const level = currentData.levels?.[i] || 0
           const percentage = Math.min(100, Math.round((level / 8) * 100))
           const hue = Math.round((c.instrument / 48) * 360) % 360
           return html`<div
             style="font-size: 0.8em; line-height: 1.2; --hue: ${hue}deg;"
-            class="text-center d-flex flex-column gap-1 text-sm overflow-hidden"
+            class="col text-center d-flex flex-column gap-1 text-sm overflow-hidden"
           >
+            <div class="text-start">${c.name.padEnd(16)}</div>
             <div
               style="height: 24px; background: hsl(var(--hue), 20%, 20%);"
               class="overflow-hidden rounded d-flex"
@@ -47,7 +95,6 @@ function handleData(data) {
                 class="rounded"
               ></div>
             </div>
-            <div class="text-start">${c.name.padEnd(16)}</div>
           </div>`
         })}
       </div>`,
@@ -65,12 +112,13 @@ class AudioFetcher {
     this.abortController.abort()
   }
   async start(callback) {
+    const mySid = crypto.randomUUID()
     try {
-      sid = crypto.randomUUID()
+      sid.value = crypto.randomUUID()
       const response = await fetch(
         `${server}/mp3?${new URLSearchParams({
-          sid,
-          name: listenerName,
+          sid: sid.value,
+          name: listenerName.value,
         })}`,
         { signal: this.abortController.signal },
       )
@@ -87,6 +135,10 @@ class AudioFetcher {
       }
     } catch (e) {
       console.error(e)
+    } finally {
+      if (sid.value === mySid) {
+        sid.value = ''
+      }
     }
   }
 }
@@ -158,15 +210,16 @@ class AudioRecorder {
 }
 
 function ensureName(forceAsk = true) {
-  if (listenerName && !forceAsk) {
+  if (listenerName.value && !forceAsk) {
     return true
   }
-  let name = prompt('Enter your name to connect', listenerName || '')
+  let name = prompt('Enter your name to connect', listenerName.value || '')
   if (!name || !name.trim()) {
     return false
   }
-  listenerName = name.trim()
-  localStorage.jamulusLoungeListenerName = listenerName
+  listenerName.value = name.trim()
+  localStorage.jamulusLoungeListenerName = listenerName.value
+  nameAsked = true
   return true
 }
 
@@ -183,7 +236,7 @@ function Player() {
     setListening(nextListening)
   }
   const createRecorder = () => {
-    if (!ensureName(!listening && !sid)) {
+    if (!ensureName(!listening && !nameAsked)) {
       return
     }
     setRecorders((r) => [...r, new AudioRecorder()])
@@ -333,19 +386,139 @@ async function* streamAsyncIterator(stream) {
   }
 }
 
+const exampleChatData = [
+  {
+    id: 'x7f7acd4-2692-47a3-90c5-148eb6dda299',
+    message:
+      '\u003cfont color="green"\u003e(08:30:24 PM) \u003cb\u003etest\u003c/b\u003e\u003c/font\u003e Hello World',
+    timestamp: '2023-01-11T13:30:24.189273042Z',
+  },
+  {
+    id: 'x67f2750-fb8c-4891-8e07-f205de4506b2',
+    message:
+      '\u003cfont color="green"\u003e(08:31:57 PM) \u003cb\u003etest\u003c/b\u003e\u003c/font\u003e testing',
+    timestamp: '2023-01-11T13:31:57.78517846Z',
+  },
+  {
+    id: 'xf7d4757-7937-40ad-a155-812428b4f86d',
+    message:
+      '\u003cfont color="green"\u003e(08:32:26 PM) \u003cb\u003etest\u003c/b\u003e\u003c/font\u003e meow',
+    timestamp: '2023-01-11T13:32:26.502031767Z',
+  },
+  {
+    id: 'xd5ceea8-0403-40c4-a17f-371bd7bb1c9b',
+    message:
+      '\u003cfont color="green"\u003e(08:35:03 PM) \u003cb\u003etest\u003c/b\u003e\u003c/font\u003e nyan',
+    timestamp: '2023-01-11T13:35:03.311070085Z',
+  },
+]
+
 function Chat() {
+  const [messages, setMessages] = useState([])
+  const currentSid = useAtom(sid)
+  const currentName = useAtom(listenerName)
+  useEffect(() => {
+    const handle = (m) => {
+      setMessages((messages) => {
+        return [...messages, m]
+      })
+    }
+    const handler = (e) => {
+      handle(e.detail)
+    }
+    document.addEventListener('jamuluschat', handler)
+    if (isQueryFlagEnabled('test-chat')) {
+      for (const c of exampleChatData) {
+        handle(c)
+      }
+    }
+    return () => {
+      document.removeEventListener('jamuluschat', handler)
+    }
+  }, [])
+  const submit = async (e) => {
+    e.preventDefault()
+    const input = e.target.elements.chatText
+    try {
+      const response = await fetch(server + '/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          sid: currentSid,
+          text: input.value,
+        }),
+      })
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+      }
+      input.value = ''
+    } catch (err) {
+      alert(`Unable to send: ${err}`)
+    }
+  }
   return html`<div class="card mb-4">
     <div class="card-header">Chat</div>
-    <div class="card-body">.</div>
+    <div
+      class="card-body"
+      style="overflow-y: auto; overflow-x: hidden; height: max(256px, 100vh - 256px);"
+    >
+      ${messages.flatMap((m) => {
+        // Example: <font color="green">(08:30:24 PM) <b>test</b></font> Hello World
+        const regex =
+          /<font color="[^"]+">\(([^)]+)\) <b>([^<]+)<\/b><\/font> (.*)/
+        const match = m.message.match(regex)
+        if (!match) {
+          return []
+        }
+        return [
+          html`<div key=${m.id}>
+            <span class="text-muted">(${match[1]})</span>${' '}
+            <strong>${match[2]}</strong>${' '} ${match[3]}
+          </div>`,
+        ]
+      })}
+    </div>
     <div class="card-footer text-center">
-      <form class="d-flex gap-2">
-        <input type="text" class="form-control" id="chatText" />
-        <input type="submit" class="btn btn-outline-primary" value="Send" />
-      </form>
-      <em class="text-muted">Listen in to chat</em>
+      ${currentSid && currentName
+        ? html`<form class="d-flex gap-2" onSubmit=${submit}>
+            <input
+              type="text"
+              class="form-control"
+              name="chatText"
+              id="chatText"
+            />
+            <input type="submit" class="btn btn-outline-primary" value="Send" />
+          </form>`
+        : html`<em class="text-muted">Listen in to chat</em>`}
     </div>
   </div>`
 }
 
+function Listeners() {
+  const [listeners, setListeners] = useState([])
+  useEffect(() => {
+    const refresh = async () => {
+      const response = await fetch(server + '/listeners')
+      const data = await response.json()
+      if (Array.isArray(data)) setListeners(data)
+    }
+    refresh()
+    const interval = setInterval(refresh, 10000)
+    return () => clearInterval(interval)
+  }, [])
+  return listeners.length
+    ? html`<ul class="mb-0">
+        ${listeners.map((d, i) => {
+          return html`<li key=${i}>${d.name}</li>`
+        })}
+      </ul>`
+    : html`<div class="text-center">
+        <em class="text-muted">No listeners right now</em>
+      </div>`
+}
+
 render(html`<${Player} />`, document.querySelector('#player'))
 render(html`<${Chat} />`, document.querySelector('#chat'))
+render(html`<${Listeners} />`, document.querySelector('#listeners'))
