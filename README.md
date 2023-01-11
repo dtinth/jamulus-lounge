@@ -1,3 +1,7 @@
+# jamulus-lounge
+
+Web-based interface to let people listen in to a Jamulus server.
+
 ## Running
 
 ```sh
