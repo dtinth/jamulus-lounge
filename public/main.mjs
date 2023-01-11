@@ -554,3 +554,14 @@ function Listeners() {
 render(html`<${Player} />`, document.querySelector('#player'))
 render(html`<${Chat} />`, document.querySelector('#chat'))
 render(html`<${Listeners} />`, document.querySelector('#listeners'))
+
+fetch(server + '/config').then(async (response) => {
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+  }
+  const { config } = await response.json()
+  if (config.title) {
+    document.title = config.title
+    document.querySelector('#app-title').innerText = config.title
+  }
+})

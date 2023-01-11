@@ -1,4 +1,5 @@
 import url from 'url'
+import fs from 'fs'
 import axios from 'axios'
 import Fastify from 'fastify'
 import fastifyStatic from '@fastify/static'
@@ -41,6 +42,18 @@ async function worker() {
 
 setInterval(worker, 2500)
 worker()
+
+fastify.get('/config', async (request, reply) => {
+  const config = {
+    ...JSON.parse(await fs.promises.readFile('config.example.json', 'utf8')),
+    ...JSON.parse(
+      await fs.promises.readFile('config.json', 'utf8').catch((e) => {
+        return '{}'
+      }),
+    ),
+  }
+  return { config }
+})
 
 fastify.get('/mp3', (request, reply) => {
   const sid = String(request.query.sid || '').slice(0, 36)
