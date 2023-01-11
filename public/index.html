@@ -1,29 +1,38 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="dark">
   <head>
     <meta charset="UTF-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Jamulus Lounge</title>
     <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
       rel="stylesheet"
-      integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65"
+      integrity="sha384-GLhlTQ8iRABdZLl6O3oVMWSktQOp6b7In1Zl3/Jr59b6EGGoI1aFkw7cmDA6j6gD"
       crossorigin="anonymous"
     />
-    <style>
-      body {
-        background: #000;
-        color: #fff;
-      }
-    </style>
   </head>
   <body>
-    <div class="container py-3 text-center">
+    <div class="container py-3">
       <h1 class="mb-4">Jamulus Lounge</h1>
-      <div id="player" class="mb-4"></div>
+      <div class="d-flex flex-wrap gap-4">
+        <div style="flex: 1 1 320px">
+          <div class="card mb-4">
+            <div class="card-header">Listening controls</div>
+            <div class="card-body">
+              <div id="player"></div>
+            </div>
+          </div>
+          <div class="card mb-4">
+            <div class="card-header">Active jammers</div>
+            <div class="card-body">
+              <div id="members"></div>
+            </div>
+          </div>
+        </div>
+        <div style="flex: 999999 1 320px"></div>
+      </div>
     </div>
-    <div id="members"></div>
     <script type="module" src="main.mjs"></script>
   </body>
 </html>
