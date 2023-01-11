@@ -213,11 +213,16 @@ function ensureName(forceAsk = true) {
   if (listenerName.value && !forceAsk) {
     return true
   }
-  let name = prompt('Enter your name to connect', listenerName.value || '')
-  if (!name || !name.trim()) {
+  const name = (
+    prompt('Enter your name to connect', listenerName.value || '') || ''
+  )
+    .trim()
+    .slice(0, 16)
+    .trim()
+  if (!name) {
     return false
   }
-  listenerName.value = name.trim()
+  listenerName.value = name
   localStorage.jamulusLoungeListenerName = listenerName.value
   nameAsked = true
   return true
@@ -483,6 +488,7 @@ function Chat() {
     <div class="card-footer text-center">
       ${currentSid && currentName
         ? html`<form class="d-flex gap-2" onSubmit=${submit}>
+            <strong class="align-self-center">${currentName}</strong>
             <input
               type="text"
               class="form-control"
