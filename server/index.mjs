@@ -48,14 +48,14 @@ fastify.get('/mp3', (request, reply) => {
     return reply.code(409).send('Already listening')
   }
   const name = String(request.query.name || '').slice(0, 16)
-  // if (!name) {
-  //   return reply.code(400).send('Missing name')
-  // }
-  listeners.set(sid, {
-    name,
-  })
+  if (!name) {
+    return reply.code(400).send('Missing name')
+  }
+  listeners.set(sid, { name })
+  request.log.info(`New listener: ${name} (${sid})`)
   reply.raw.on('close', () => {
     listeners.delete(sid)
+    request.log.info(`Listener disconnected: ${name} (${sid})`)
   })
   reply.from('/mp3')
 })

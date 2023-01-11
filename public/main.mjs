@@ -7,6 +7,7 @@ import {
 } from 'https://cdn.jsdelivr.net/npm/htm@3.1.1/preact/standalone.module.js'
 
 let sid = ''
+let listenerName = localStorage.jamulusLoungeListenerName || ''
 let getActionDelay = () => 0
 
 const server = new URLSearchParams(location.search).get('apiserver') || '.'
@@ -66,9 +67,13 @@ class AudioFetcher {
   async start(callback) {
     try {
       sid = crypto.randomUUID()
-      const response = await fetch(server + '/mp3?sid=' + sid, {
-        signal: this.abortController.signal,
-      })
+      const response = await fetch(
+        `${server}/mp3?${new URLSearchParams({
+          sid,
+          name: listenerName,
+        })}`,
+        { signal: this.abortController.signal },
+      )
       if (!response.ok) {
         throw new Error('Cannot load audio stream, error ' + response.status)
       }
@@ -152,13 +157,35 @@ class AudioRecorder {
   }
 }
 
+function ensureName(forceAsk = true) {
+  if (listenerName && !forceAsk) {
+    return true
+  }
+  let name = prompt('Enter your name to connect', listenerName || '')
+  if (!name || !name.trim()) {
+    return false
+  }
+  listenerName = name.trim()
+  localStorage.jamulusLoungeListenerName = listenerName
+  return true
+}
+
 function Player() {
   const [listening, setListening] = useState(false)
   const [recorders, setRecorders] = useState([])
   const toggleListen = () => {
-    setListening(!listening)
+    const nextListening = !listening
+    if (nextListening) {
+      if (!ensureName(!listening)) {
+        return
+      }
+    }
+    setListening(nextListening)
   }
   const createRecorder = () => {
+    if (!ensureName(!listening && !sid)) {
+      return
+    }
     setRecorders((r) => [...r, new AudioRecorder()])
   }
   const removeRecording = (rec) => {
@@ -178,12 +205,15 @@ function Player() {
       ${listening && html`<${Listener} />`}
       <button class="btn btn-danger" onClick=${createRecorder}>Record</button>
     </div>
-    ${recorders.map((rec) => {
-      return html`<${Recorder}
-        recorder=${rec}
-        onDelete=${() => removeRecording(rec)}
-      />`
-    })}
+    ${recorders.length > 0 &&
+    html`<div class="d-flex flex-column gap-2 mt-3">
+      ${recorders.map((rec) => {
+        return html`<${Recorder}
+          recorder=${rec}
+          onDelete=${() => removeRecording(rec)}
+        />`
+      })}
+    </div>`}
   </div>`
 }
 
@@ -259,27 +289,32 @@ function Recorder(props) {
       setStopped(props.recorder.stopped)
     })
   })
-  return html`<div
-    class="d-flex gap-2 align-items-center justify-content-center"
-  >
-    <div class="text-start">${props.recorder.fileName}</div>
-    <div>${(size / 1024 / 1024).toFixed(2)} MB</div>
-    <div class="d-flex gap-1">
-      ${!stopped &&
-      html`<button class="btn btn-sm btn-secondary" onClick=${stop}>
-        Stop
-      </button>`}
-      ${stopped &&
-      html`<a
-          class="btn btn-sm btn-outline-success"
-          href=${stopped.href}
-          download=${props.recorder.fileName}
-        >
-          Download
-        </a>
-        <button class="btn btn-sm btn-outline-danger" onClick=${props.onDelete}>
-          Delete
+  return html`<div>
+    <div class="text-start text-muted" style="font-size: 0.8em">
+      ${props.recorder.fileName}
+    </div>
+    <div class="d-flex gap-2 align-items-center justify-content-center">
+      <div style="flex: auto">${(size / 1024 / 1024).toFixed(2)} MB</div>
+      <div class="d-flex gap-1">
+        ${!stopped &&
+        html`<button class="btn btn-sm btn-outline-secondary" onClick=${stop}>
+          Stop
         </button>`}
+        ${stopped &&
+        html`<a
+            class="btn btn-sm btn-outline-success"
+            href=${stopped.href}
+            download=${props.recorder.fileName}
+          >
+            Download
+          </a>
+          <button
+            class="btn btn-sm btn-outline-danger"
+            onClick=${props.onDelete}
+          >
+            Delete
+          </button>`}
+      </div>
     </div>
   </div>`
 }
