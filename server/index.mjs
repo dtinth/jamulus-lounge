@@ -82,4 +82,4 @@ fastify.get('/listeners', async (request, reply) => {
   }))
 })
 
-fastify.listen({ port: 9998 })
+fastify.listen({ port: 9998, host: '127.0.0.1' })
