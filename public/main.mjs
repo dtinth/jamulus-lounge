@@ -114,7 +114,7 @@ class AudioFetcher {
   async start(callback) {
     const mySid = crypto.randomUUID()
     try {
-      sid.value = crypto.randomUUID()
+      sid.value = mySid
       const response = await fetch(
         `${server}/mp3?${new URLSearchParams({
           sid: sid.value,
@@ -231,6 +231,7 @@ function ensureName(forceAsk = true) {
 function Player() {
   const [listening, setListening] = useState(false)
   const [recorders, setRecorders] = useState([])
+  const currentSid = useAtom(sid)
   const toggleListen = () => {
     const nextListening = !listening
     if (nextListening) {
@@ -263,6 +264,13 @@ function Player() {
       ${listening && html`<${Listener} />`}
       <button class="btn btn-danger" onClick=${createRecorder}>Record</button>
     </div>
+    ${!!listening &&
+    !currentSid &&
+    html`<div class="text-danger text-center">
+      You have been disconnected from the server. Please
+      ${recorders.length > 0 ? ' download all the recordings, ' : ' '}refresh
+      the page and try again later.
+    </div>`}
     ${recorders.length > 0 &&
     html`<div class="d-flex flex-column gap-2 mt-3">
       ${recorders.map((rec) => {
