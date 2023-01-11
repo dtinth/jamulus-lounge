@@ -1,0 +1,17 @@
+services:
+  gojam:
+    image: ghcr.io/dtinth/gojam:main
+    command: gojamclient -name lobby -server 127.0.0.1:22124 -apiserver 127.0.0.1:9999 -mp3 -vad
+    network_mode: host
+  server:
+    image: node:16
+    working_dir: /app
+    init: true
+    network_mode: host
+    command: yarn start
+    restart: always
+    volumes:
+      - ./server:/app
+      - node_modules:/app/node_modules
+volumes:
+  node_modules:

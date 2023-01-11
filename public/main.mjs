@@ -6,6 +6,7 @@ import {
   useEffect,
 } from 'https://cdn.jsdelivr.net/npm/htm@3.1.1/preact/standalone.module.js'
 
+let sid = ''
 let getActionDelay = () => 0
 
 const server = new URLSearchParams(location.search).get('apiserver') || '.'
@@ -27,25 +28,25 @@ function handleData(data) {
   }
   if (currentData.clients) {
     render(
-      html`<div class="d-flex gap-2 flex-wrap justify-content-center">
+      html`<div class="d-flex gap-2 flex-column">
         ${currentData.clients.map((c, i) => {
           const level = currentData.levels?.[i] || 0
           const percentage = Math.min(100, Math.round((level / 8) * 100))
           const hue = Math.round((c.instrument / 48) * 360) % 360
           return html`<div
-            style="width: 24px; font-size: 0.8em; line-height: 1.2; --hue: ${hue}deg;"
-            class="text-center d-flex flex-column gap-2 align-items-center text-sm overflow-hidden"
+            style="font-size: 0.8em; line-height: 1.2; --hue: ${hue}deg;"
+            class="text-center d-flex flex-column gap-1 text-sm overflow-hidden"
           >
             <div
-              style="height: 192px; width: 24px; background: hsl(var(--hue), 20%, 20%);"
-              class="overflow-hidden rounded d-flex flex-column-reverse"
+              style="height: 24px; background: hsl(var(--hue), 20%, 20%);"
+              class="overflow-hidden rounded d-flex"
             >
               <div
-                style="height: ${percentage}%; background: hsl(var(--hue), 80%, 80%);"
+                style="width: ${percentage}%; background: hsl(var(--hue), 80%, 80%);"
                 class="rounded"
               ></div>
             </div>
-            <div style="writing-mode: vertical-rl;">${c.name.padEnd(16)}</div>
+            <div class="text-start">${c.name.padEnd(16)}</div>
           </div>`
         })}
       </div>`,
@@ -64,7 +65,8 @@ class AudioFetcher {
   }
   async start(callback) {
     try {
-      const response = await fetch(server + '/mp3', {
+      sid = crypto.randomUUID()
+      const response = await fetch(server + '/mp3?sid=' + sid, {
         signal: this.abortController.signal,
       })
       if (!response.ok) {
@@ -174,9 +176,7 @@ function Player() {
             Listen
           </button>`}
       ${listening && html`<${Listener} />`}
-      <button class="btn btn-danger" onClick=${createRecorder}>
-        Start Recording
-      </button>
+      <button class="btn btn-danger" onClick=${createRecorder}>Record</button>
     </div>
     ${recorders.map((rec) => {
       return html`<${Recorder}
@@ -298,4 +298,19 @@ async function* streamAsyncIterator(stream) {
   }
 }
 
+function Chat() {
+  return html`<div class="card mb-4">
+    <div class="card-header">Chat</div>
+    <div class="card-body">.</div>
+    <div class="card-footer text-center">
+      <form class="d-flex gap-2">
+        <input type="text" class="form-control" id="chatText" />
+        <input type="submit" class="btn btn-outline-primary" value="Send" />
+      </form>
+      <em class="text-muted">Listen in to chat</em>
+    </div>
+  </div>`
+}
+
 render(html`<${Player} />`, document.querySelector('#player'))
+render(html`<${Chat} />`, document.querySelector('#chat'))
