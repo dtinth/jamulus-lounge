@@ -422,6 +422,8 @@ function Chat() {
   const [messages, setMessages] = useState([])
   const currentSid = useAtom(sid)
   const currentName = useAtom(listenerName)
+  const atBottom = useRef(true)
+  const scrollableRef = useRef(null)
   useEffect(() => {
     const handle = (m) => {
       setMessages((messages) => {
@@ -436,6 +438,18 @@ function Chat() {
       for (const c of exampleChatData) {
         handle(c)
       }
+    }
+    if (isQueryFlagEnabled('test-chat-stream')) {
+      setInterval(() => {
+        const id = crypto.randomUUID()
+        handle({
+          id,
+          message:
+            '\u003cfont color="green"\u003e(HH:MM:SS XM) \u003cb\u003etest\u003c/b\u003e\u003c/font\u003e ' +
+            id,
+          timestamp: new Date().toISOString(),
+        })
+      }, 1000)
     }
     return () => {
       document.removeEventListener('jamuluschat', handler)
@@ -463,10 +477,22 @@ function Chat() {
       alert(`Unable to send: ${err}`)
     }
   }
+  const handleScroll = (e) => {
+    const el = scrollableRef.current
+    atBottom.current = el.scrollTop + el.clientHeight >= el.scrollHeight - 32
+  }
+  useEffect(() => {
+    if (atBottom.current) {
+      const el = scrollableRef.current
+      el.scrollTop = el.scrollHeight
+    }
+  }, [messages])
   return html`<div class="card mb-4">
     <div class="card-header">Chat</div>
     <div
       class="card-body"
+      ref=${scrollableRef}
+      onScroll=${handleScroll}
       style="overflow-y: auto; overflow-x: hidden; height: max(256px, 100vh - 256px);"
     >
       ${messages.flatMap((m) => {
