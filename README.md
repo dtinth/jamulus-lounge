@@ -1,3 +1,5 @@
+## Running
+
 ```sh
 # Pull the latest images
 docker compose pull
@@ -10,4 +12,14 @@ docker compose up --detach
 
 # Check the logs
 docker compose logs --follow
+
+# Restart server
+docker compose restart server
+```
+
+## Configuration
+
+```sh
+# Create configuration file
+cp server/config.example.json server/config.json
 ```
