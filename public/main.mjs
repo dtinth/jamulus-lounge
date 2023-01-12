@@ -42,6 +42,7 @@ function useAtom(a) {
 }
 
 let sid = createAtom('')
+let welcomeHtmlAtom = createAtom('')
 let nameAsked = false
 let listenerName = createAtom(localStorage.jamulusLoungeListenerName || '')
 let getActionDelay = () => 0
@@ -430,6 +431,7 @@ function Chat() {
   const [messages, setMessages] = useState([])
   const currentSid = useAtom(sid)
   const currentName = useAtom(listenerName)
+  const welcomeHtml = useAtom(welcomeHtmlAtom)
   const atBottom = useRef(true)
   const scrollableRef = useRef(null)
   useEffect(() => {
@@ -503,6 +505,12 @@ function Chat() {
       onScroll=${handleScroll}
       style="overflow-y: auto; overflow-x: hidden; height: max(256px, 100vh - 256px);"
     >
+      ${welcomeHtml
+        ? html`<div>
+            <div dangerouslySetInnerHTML=${{ __html: welcomeHtml }} />
+            <hr />
+          </div>`
+        : null}
       ${messages.flatMap((m) => {
         // Example: <font color="green">(08:30:24 PM) <b>test</b></font> Hello World
         const regex =
@@ -572,4 +580,12 @@ fetch(server + '/config').then(async (response) => {
     document.title = config.title
     document.querySelector('#app-title').innerText = config.title
   }
+})
+
+fetch('welcome.html').then(async (response) => {
+  if (!response.ok) {
+    console.warn('No welcome.html found')
+    return
+  }
+  welcomeHtmlAtom.value = await response.text()
 })
