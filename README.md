@@ -26,4 +26,7 @@ docker compose restart server
 ```sh
 # Create configuration file
 cp server/config.example.json server/config.json
+
+# Create welcome message
+echo Welcome > public/welcome.html
 ```
