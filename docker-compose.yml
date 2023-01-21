@@ -14,5 +14,16 @@ services:
       - ./server:/app/server
       - ./public:/app/public
       - node_modules:/app/node_modules
+  clipper:
+    image: node:16
+    working_dir: /app/server
+    init: true
+    network_mode: host
+    command: node clipper.mjs
+    restart: always
+    volumes:
+      - ./server:/app/server
+      - ./public:/app/public
+      - node_modules:/app/node_modules
 volumes:
   node_modules:
