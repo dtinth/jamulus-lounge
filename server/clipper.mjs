@@ -71,7 +71,7 @@ class ClipBuffer {
     })()
     return {
       size,
-      timestamp: this.head.timestamp,
+      timestamp: timestamp,
       [Symbol.iterator]() {
         return iterator
       },
@@ -106,7 +106,7 @@ fastify.get('/clip', async (request, reply) => {
   reply.header('Content-Length', clip.size)
   const filename =
     'clip-' +
-    new Date(Date.now() - 60e3 * new Date().getTimezoneOffset())
+    new Date(clip.timestamp - 60e3 * new Date().getTimezoneOffset())
       .toISOString()
       .replace(/:/g, '-')
       .split('.')[0] +
