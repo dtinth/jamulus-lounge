@@ -76,7 +76,7 @@ function handleData(data) {
     render(
       html`<div
         class="gap-3 flex-column"
-        style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr));"
+        style="display: grid; grid-template-columns: repeat(var(--columns, 2), minmax(0, 1fr));"
       >
         ${currentData.clients.map((c, i) => {
           const level = currentData.levels?.[i] || 0
@@ -567,9 +567,11 @@ function Listeners() {
       </div>`
 }
 
-render(html`<${Player} />`, document.querySelector('#player'))
-render(html`<${Chat} />`, document.querySelector('#chat'))
-render(html`<${Listeners} />`, document.querySelector('#listeners'))
+if (document.querySelector('#player')) {
+  render(html`<${Player} />`, document.querySelector('#player'))
+  render(html`<${Chat} />`, document.querySelector('#chat'))
+  render(html`<${Listeners} />`, document.querySelector('#listeners'))
+}
 
 fetch(server + '/config').then(async (response) => {
   if (!response.ok) {
