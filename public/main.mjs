@@ -270,7 +270,8 @@ function Player() {
     html`<div class="text-danger text-center">
       You have been disconnected from the server. Please
       ${recorders.length > 0 ? ' download all the recordings, ' : ' '}refresh
-      the page and try again later.
+      the page and try again later. Please note that
+      <strong>iOS is not supported.</strong>
     </div>`}
     ${recorders.length > 0 &&
     html`<div class="d-flex flex-column gap-2 mt-3">
