@@ -135,3 +135,5 @@ dist
 # Configuration file
 /server/config.json
 /public/welcome.html
+
+docker-compose.override.yml
