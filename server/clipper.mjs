@@ -238,9 +238,12 @@ async function generateClipArchive() {
   return filename
 }
 
+let lastClipMessage = 0
 async function generateClipMessage() {
   try {
     if (!process.env.CLIPPER_URL) return
+    if (Date.now() - lastClipMessage < 60e3) return
+    lastClipMessage = Date.now()
     const clip = await generateClipArchive()
     if (!clip) return
     const url = process.env.CLIPPER_URL + '/' + clip
