@@ -5,6 +5,7 @@ import EventSource from 'eventsource'
 import archiver from 'archiver'
 import { pipeline } from 'stream/promises'
 import { createWriteStream } from 'fs'
+import axios from 'axios'
 
 const MAX_CLIP_TIME = 600e3
 
@@ -166,6 +167,7 @@ http.get('http://localhost:9999/mp3', async (res) => {
 
 const eventSource = new EventSource('http://localhost:9999/events')
 let currentState = {}
+const seenId = new Set()
 eventSource.addEventListener('message', (event) => {
   const data = JSON.parse(event.data)
   eventBuffer.add(currentState, data)
@@ -174,6 +176,15 @@ eventSource.addEventListener('message', (event) => {
   }
   if (data.levels) {
     currentState = { ...currentState, levels: data.levels }
+  }
+  if (data.newChatMessage) {
+    const { id, message } = data.newChatMessage
+    if (message.match(/>\s+\/clip\s*$/)) {
+      if (!seenId.has(id)) {
+        seenId.add(id)
+        generateClipMessage()
+      }
+    }
   }
 })
 
@@ -225,6 +236,20 @@ async function generateClipArchive() {
     createWriteStream(process.env.CLIPPER_DIR + '/' + filename),
   )
   return filename
+}
+
+async function generateClipMessage() {
+  try {
+    if (!process.env.CLIPPER_URL) return
+    const clip = await generateClipArchive()
+    if (!clip) return
+    const url = process.env.CLIPPER_URL + '/' + clip
+    const message = `${url}`
+    fastify.log.info(message)
+    await axios.post('http://localhost:9999/chat', { message })
+  } catch (e) {
+    fastify.log.error({ err: e }, 'Error generating clip')
+  }
 }
 
 fastify.post('/generate', async (request, reply) => {
