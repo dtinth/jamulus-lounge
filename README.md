@@ -2,7 +2,12 @@
 
 Web-based interface to let people listen in to a Jamulus server.
 
-## Running
+## Needs
+
+* x86_64 architecture (not arm64)
+* 1 megabyte of RAM
+
+## Run
 
 ```sh
 # Pull the latest images
@@ -21,7 +26,7 @@ docker compose logs --follow
 docker compose restart server
 ```
 
-## Configuration
+## Configure
 
 ```sh
 # Create configuration file
