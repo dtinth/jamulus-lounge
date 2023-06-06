@@ -73,20 +73,25 @@ function handleData(data) {
     document.dispatchEvent(event)
   }
   if (currentData.clients) {
+    let clients = insertLevel(currentData.clients, currentData.levels)
+    if (isQueryFlagEnabled('active-only')) {
+      clients = filterActiveOnly(clients)
+    }
     render(
       html`<div
         class="gap-3 flex-column"
         style="display: grid; grid-template-columns: repeat(var(--columns, 2), minmax(0, 1fr));"
       >
-        ${currentData.clients.map((c, i) => {
-          const level = currentData.levels?.[i] || 0
+        ${clients.map((c) => {
+          const level = c.level
           const percentage = Math.min(100, Math.round((level / 8) * 100))
           const hue = Math.round((c.instrument / 48) * 360) % 360
           return html`<div
             style="font-size: 0.8em; line-height: 1.2; --hue: ${hue}deg;"
             class="col text-center d-flex flex-column gap-1 text-sm overflow-hidden"
+            key=${c.index}
           >
-            <div class="text-start">${c.name.padEnd(16)}</div>
+            <div class="text-start" style="flex: 1 0">${c.name.padEnd(16)}</div>
             <div
               style="height: 24px; background: hsl(var(--hue), 20%, 20%);"
               class="overflow-hidden rounded d-flex"
@@ -427,6 +432,41 @@ const exampleChatData = [
     timestamp: '2023-01-11T13:35:03.311070085Z',
   },
 ]
+
+const insertLevel = (clients, levels) => {
+  return clients.map((c, i) => {
+    const level = levels?.[i] || 0
+    const index = c
+    return { ...c, level, index }
+  })
+}
+
+const filterActiveOnly = (() => {
+  const hp = new Map()
+  const cLevel = new Map()
+  return (clients) => {
+    for (const c of clients) {
+      if (c.level > 0) {
+        hp.set(c.name, 32)
+        cLevel.set(c.name, (cLevel.get(c.name) || 0) + c.level)
+      } else {
+        const cHp = hp.get(c.name) || 0
+        if (cHp > 0) {
+          hp.set(c.name, cHp - 1)
+        } else {
+          hp.delete(c.name)
+          cLevel.delete(c.name)
+        }
+      }
+    }
+    return clients.filter(c => {
+      return hp.has(c.name)
+    })
+      // .sort((a, b) => {
+      //  return (cLevel.get(b.name) || 0) - (cLevel.get(a.name) || 0)
+      // })
+  }
+})()
 
 function Chat() {
   const [messages, setMessages] = useState([])
