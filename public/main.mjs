@@ -50,13 +50,20 @@ let getActionDelay = () => 0
 const server = new URLSearchParams(location.search).get('apiserver') || '.'
 const eventSource = new EventSource(server + '/events')
 const currentData = {}
+const dataListeners = new Set()
+
 Object.assign(window, { currentData })
+
 eventSource.addEventListener('message', (event) => {
   const data = JSON.parse(event.data)
+  for (const listener of dataListeners) {
+    listener(data)
+  }
   setTimeout(() => {
     handleData(data)
   }, getActionDelay())
 })
+
 function handleData(data) {
   if (data.clients) {
     currentData.clients = data.clients
@@ -189,19 +196,49 @@ class AudioRecorder {
     this.size = 0
     this.chunks = []
     this.stopped = false
-    this._unsubscribe = audioStream.subscribe((data) => {
+    this.ndjson = [
+      JSON.stringify({
+        initial: {
+          state: {
+            clients: currentData.clients || [],
+            levels: currentData.levels || [],
+          },
+          startTime: performance.now(),
+        },
+      }) + '\n',
+    ]
+    this._unsubscribeStream = audioStream.subscribe((data) => {
       this.size += data.byteLength
       this.chunks.push(data)
       this.subscribers.forEach((s) => {
         s.callback()
       })
     })
+    const dataListener = (data) => {
+      this.ndjson.push(
+        JSON.stringify({
+          event: {
+            time: performance.now(),
+            timestamp: Date.now(),
+            data,
+          },
+        }) + '\n',
+      )
+    }
+    dataListeners.add(dataListener)
+    this._unsubscribeData = () => {
+      dataListeners.delete(dataListener)
+    }
   }
   stop() {
     this.stopped = {
       href: URL.createObjectURL(new Blob(this.chunks, { type: 'audio/mpeg' })),
+      eventsHref: URL.createObjectURL(
+        new Blob(this.ndjson, { type: 'application/x-ndjson' }),
+      ),
     }
-    this._unsubscribe()
+    this._unsubscribeStream()
+    this._unsubscribeData()
     this.subscribers.forEach((s) => {
       s.callback()
     })
@@ -375,6 +412,13 @@ function Recorder(props) {
         </button>`}
         ${stopped &&
         html`<a
+            class="btn btn-sm btn-outline-secondary"
+            href=${stopped.eventsHref}
+            download=${props.recorder.fileName.replace(/\.\w+$/, '.ndjson')}
+          >
+            {}
+          </a>
+          <a
             class="btn btn-sm btn-outline-success"
             href=${stopped.href}
             download=${props.recorder.fileName}
@@ -459,12 +503,12 @@ const filterActiveOnly = (() => {
         }
       }
     }
-    return clients.filter(c => {
+    return clients.filter((c) => {
       return hp.has(c.name)
     })
-      // .sort((a, b) => {
-      //  return (cLevel.get(b.name) || 0) - (cLevel.get(a.name) || 0)
-      // })
+    // .sort((a, b) => {
+    //  return (cLevel.get(b.name) || 0) - (cLevel.get(a.name) || 0)
+    // })
   }
 })()
 
