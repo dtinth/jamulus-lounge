@@ -331,88 +331,37 @@ function Listener() {
   const ref = useRef()
   useEffect(() => {
     const audioEl = ref.current
-    const playWithMSE = () => {
-      const stream = new TransformStream()
-      const writer = stream.writable.getWriter()
-      const mediaSource = new MediaSource()
-      const unsubscribe = audioStream.subscribe((data) => {
-        writer.write(data)
+    const stream = new TransformStream()
+    const writer = stream.writable.getWriter()
+    const mediaSource = new MediaSource()
+    const unsubscribe = audioStream.subscribe((data) => {
+      writer.write(data)
+    })
+    mediaSource.addEventListener('sourceopen', async () => {
+      const sourceBuffer = mediaSource.addSourceBuffer('audio/mpeg')
+      let onUpdateEnd = () => {}
+      sourceBuffer.addEventListener('updateend', () => {
+        onUpdateEnd()
       })
-      mediaSource.addEventListener('sourceopen', async () => {
-        const sourceBuffer = mediaSource.addSourceBuffer('audio/mpeg')
-        let onUpdateEnd = () => {}
-        sourceBuffer.addEventListener('updateend', () => {
-          onUpdateEnd()
-        })
-        let received = false
-        for await (const chunk of streamAsyncIterator(stream.readable)) {
-          await new Promise((resolve) => {
-            onUpdateEnd = resolve
-            sourceBuffer.appendBuffer(chunk)
-          })
-          if (!received) {
-            received = true
-            setTimeout(() => {
-              audioEl.play()
-            }, 1000)
-          }
-        }
-      })
-      audioEl.src = URL.createObjectURL(mediaSource)
-      return () => {
-        unsubscribe()
-        writer.close()
-      }
-    }
-    const playWithServiceWorker = () => {
-      let canceled = false
-      let unsubscribe = () => {
-        canceled = true
-      }
-      void (async () => {
-        const streamId = crypto.randomUUID()
+      let received = false
+      for await (const chunk of streamAsyncIterator(stream.readable)) {
         await new Promise((resolve) => {
-          navigator.serviceWorker.addEventListener('message', (event) => {
-            const { data } = event
-            if (data.streamOpened?.id === streamId) {
-              resolve()
-            }
-          })
-          navigator.serviceWorker.controller.postMessage({
-            openStream: { id: streamId, type: 'audio/mp3' },
-          })
+          onUpdateEnd = resolve
+          sourceBuffer.appendBuffer(chunk)
         })
-        console.log('Stream opened', streamId)
-        if (!canceled) {
-          let received = false
-          unsubscribe = audioStream.subscribe((data) => {
-            navigator.serviceWorker.controller.postMessage({
-              writeToStream: { id: streamId, data },
-            })
-            if (!received) {
-              received = true
-              setTimeout(() => {
-                audioEl.play()
-              }, 1000)
-            }
-          })
-          audioEl.src = '/__streams__/' + streamId
+        if (!received) {
+          received = true
+          setTimeout(() => {
+            audioEl.play()
+          }, 1000)
         }
-      })()
-      return unsubscribe
-    }
-    const onUnmount = (() => {
-      if (window.MediaSource) {
-        return playWithMSE()
       }
-      if (navigator.serviceWorker.controller?.state === 'activated') {
-        return playWithServiceWorker()
-      }
-      throw new Error('No playback method available')
-    })()
+    })
+    audioEl.src = URL.createObjectURL(mediaSource)
     getActionDelay = createGetActionDelay(audioEl)
     return () => {
-      onUnmount()
+      unsubscribe()
+      writer.close()
       getActionDelay = () => 0
     }
   }, [])
@@ -727,17 +676,3 @@ fetch('welcome.html').then(async (response) => {
   }
   welcomeHtmlAtom.value = await response.text()
 })
-
-// Register service worker
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').then(
-      (registration) => {
-        console.log('Service worker registration successful', registration)
-      },
-      (err) => {
-        console.warn('Service worker registration failed', err)
-      },
-    )
-  })
-}
