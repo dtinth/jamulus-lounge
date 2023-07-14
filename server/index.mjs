@@ -60,7 +60,6 @@ fastify.get('/mp3', (request, reply) => {
     // Send 2 bytes to make the browser think it's an mp3
     return reply
       .code(206)
-      .header('Content-Range', 'bytes 0-1/2')
       .header('Content-Type', 'audio/mpeg')
       .send(Buffer.from('ID'))
   }
