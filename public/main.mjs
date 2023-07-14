@@ -6,6 +6,8 @@ import {
   useEffect,
 } from 'https://cdn.jsdelivr.net/npm/htm@3.1.1/preact/standalone.module.js'
 
+const mediaSourceSupported = !!window.MediaSource
+
 let flagSet
 export function isQueryFlagEnabled(flagName) {
   if (!flagSet) {
@@ -42,6 +44,7 @@ function useAtom(a) {
 }
 
 let sid = createAtom('')
+let fallbackListenUrl = createAtom('')
 let welcomeHtmlAtom = createAtom('')
 let nameAsked = false
 let listenerName = createAtom(localStorage.jamulusLoungeListenerName || '')
@@ -274,6 +277,7 @@ function ensureName(forceAsk = true) {
 function Player() {
   const [listening, setListening] = useState(false)
   const [recorders, setRecorders] = useState([])
+  const currentFallbackListenUrl = useAtom(fallbackListenUrl)
   const currentSid = useAtom(sid)
   const toggleListen = () => {
     const nextListening = !listening
@@ -297,23 +301,33 @@ function Player() {
   }
   return html`<div class="d-flex flex-column gap-2">
     <div class="d-flex gap-2 justify-content-center">
-      ${listening
-        ? html`<button class="btn btn-secondary" onClick=${toggleListen}>
-            Stop Listening
-          </button>`
-        : html`<button class="btn btn-primary" onClick=${toggleListen}>
-            Listen
-          </button>`}
-      ${listening && html`<${Listener} />`}
-      <button class="btn btn-danger" onClick=${createRecorder}>Record</button>
+      ${currentFallbackListenUrl
+        ? html`<audio
+            controls
+            src=${currentFallbackListenUrl}
+            autoplay
+          ></audio>`
+        : html`
+            ${listening
+              ? html`<button class="btn btn-secondary" onClick=${toggleListen}>
+                  Stop Listening
+                </button>`
+              : html`<button class="btn btn-primary" onClick=${toggleListen}>
+                  Listen
+                </button>`}
+            ${listening && html`<${Listener} />`}
+            <button class="btn btn-danger" onClick=${createRecorder}>
+              Record
+            </button>
+          `}
     </div>
     ${!!listening &&
     !currentSid &&
+    !fallbackListenUrl &&
     html`<div class="text-danger text-center">
       You have been disconnected from the server. Please
       ${recorders.length > 0 ? ' download all the recordings, ' : ' '}refresh
-      the page and try again later. Please note that
-      <strong>iOS is not supported.</strong>
+      the page and try again later.
     </div>`}
     ${recorders.length > 0 &&
     html`<div class="d-flex flex-column gap-2 mt-3">
@@ -330,6 +344,16 @@ function Player() {
 function Listener() {
   const ref = useRef()
   useEffect(() => {
+    if (!mediaSourceSupported) {
+      fallbackListenUrl.value =
+        server +
+        '/mp3?' +
+        new URLSearchParams({
+          name: listenerName.value,
+          sid: crypto.randomUUID(),
+        })
+      return
+    }
     const audioEl = ref.current
     const stream = new TransformStream()
     const writer = stream.writable.getWriter()
@@ -365,7 +389,7 @@ function Listener() {
       getActionDelay = () => 0
     }
   }, [])
-  return html`<audio ref=${ref} />`
+  return mediaSourceSupported ? html`<audio ref=${ref} />` : null
 }
 
 function createGetActionDelay(audioEl) {
