@@ -6,8 +6,6 @@ import {
   useEffect,
 } from 'https://cdn.jsdelivr.net/npm/htm@3.1.1/preact/standalone.module.js'
 
-const mediaSourceSupported = !!window.MediaSource
-
 let flagSet
 export function isQueryFlagEnabled(flagName) {
   if (!flagSet) {
@@ -19,6 +17,9 @@ export function isQueryFlagEnabled(flagName) {
   }
   return flagSet.has(flagName)
 }
+
+const mediaSourceSupported =
+  !!window.MediaSource && !isQueryFlagEnabled('test-no-media-source')
 
 function createAtom(v) {
   const a = {
