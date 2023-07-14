@@ -56,9 +56,9 @@ fastify.get('/config', async (request, reply) => {
 })
 
 fastify.get('/mp3', (request, reply) => {
-  // Deny range requests
-  if (request.headers.range) {
-    return reply.code(400).send('Range requests not supported')
+  if (request.headers.range === 'bytes=0-1') {
+    // Send 2 bytes to make the browser think it's an mp3
+    return reply.code(206).header('Content-Length', 2).send(Buffer.from('ID'))
   }
   const sid = String(request.query.sid || '').slice(0, 36)
   if (!sid || listeners.has(sid)) {
