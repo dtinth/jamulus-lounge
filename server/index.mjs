@@ -57,11 +57,15 @@ fastify.get('/config', async (request, reply) => {
 
 fastify.get('/mp3', (request, reply) => {
   if (request.headers.range === 'bytes=0-1') {
-    // Send 2 bytes to make the browser think it's an mp3
-    return reply
-      .code(206)
-      .header('Content-Type', 'audio/mpeg')
-      .send(Buffer.from('ID'))
+    // Send a single MP3 frame to make the browser think this is an MP3 file
+    const mp3Frame = Buffer.from([
+      0xff, 0xfb, 0x90, 0x64, 0x00, 0x00, 0x00, 0x00, 0x00,
+    ])
+    reply.status(206)
+    reply.header('Content-Type', 'audio/mpeg')
+    reply.header('Content-Length', mp3Frame.length)
+    reply.send(mp3Frame)
+    return
   }
   const sid = String(request.query.sid || '').slice(0, 36)
   if (!sid || listeners.has(sid)) {
