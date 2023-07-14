@@ -302,11 +302,13 @@ function Player() {
   return html`<div class="d-flex flex-column gap-2">
     <div class="d-flex gap-2 justify-content-center">
       ${currentFallbackListenUrl
-        ? html`<a href=${currentFallbackListenUrl} target="_blank"
-              >Click here to listen</a
+        ? html`<div>
+            <a href=${currentFallbackListenUrl} target="_blank"
+              ><strong>Click here to listen</strong></a
             ><br />
             Note: The audio may have a lot of delay and may not be in sync with
-            the chat.`
+            the chat.
+          </div>`
         : html`
             ${listening
               ? html`<button class="btn btn-secondary" onClick=${toggleListen}>
