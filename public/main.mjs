@@ -47,6 +47,7 @@ function useAtom(a) {
 let sid = createAtom('')
 let fallbackListenUrl = createAtom('')
 let welcomeHtmlAtom = createAtom('')
+let actionDelayAtom = createAtom(0)
 let nameAsked = false
 let listenerName = createAtom(localStorage.jamulusLoungeListenerName || '')
 let getActionDelay = () => 0
@@ -63,9 +64,11 @@ eventSource.addEventListener('message', (event) => {
   for (const listener of dataListeners) {
     listener(data)
   }
+  const actionDelay = getActionDelay()
+  actionDelayAtom.value = actionDelay
   setTimeout(() => {
     handleData(data)
-  }, getActionDelay())
+  }, actionDelay)
 })
 
 function handleData(data) {
@@ -303,13 +306,7 @@ function Player() {
   return html`<div class="d-flex flex-column gap-2">
     <div class="d-flex gap-2 justify-content-center">
       ${currentFallbackListenUrl
-        ? html`<div>
-            <a href=${currentFallbackListenUrl} target="_blank"
-              ><strong>Click here to listen</strong></a
-            ><br />
-            Note: The audio may have a lot of delay and may not be in sync with
-            the chat.
-          </div>`
+        ? html`<${FallbackListener} url=${currentFallbackListenUrl} />`
         : html`
             ${listening
               ? html`<button class="btn btn-secondary" onClick=${toggleListen}>
@@ -324,6 +321,7 @@ function Player() {
             </button>
           `}
     </div>
+    ${!!listening && html`<${ActionDelayView} />`}
     ${!!listening &&
     !currentSid &&
     !fallbackListenUrl &&
@@ -392,7 +390,32 @@ function Listener() {
       getActionDelay = () => 0
     }
   }, [])
-  return mediaSourceSupported ? html`<audio ref=${ref} />` : null
+  return html`<audio ref=${ref} />`
+}
+
+function FallbackListener({ url }) {
+  const ref = useRef()
+  useEffect(() => {
+    const audioEl = ref.current
+    getActionDelay = createGetActionDelay(audioEl)
+    return () => {
+      getActionDelay = () => 0
+    }
+  }, [])
+  return html`<div class="text-center">
+    <audio ref=${ref} src=${url} controls autoplay /><br />
+    Note: The audio may have a lot of delay and may not be in sync with the
+    chat.
+  </div>`
+}
+
+function ActionDelayView() {
+  const actionDelay = useAtom(actionDelayAtom)
+  return actionDelay > 0
+    ? html`<div class="text-muted text-center">
+        <small>Stream latency: ${(actionDelay / 1000).toFixed(1)}s</small>
+      </div>`
+    : null
 }
 
 function createGetActionDelay(audioEl) {
