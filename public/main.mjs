@@ -18,6 +18,9 @@ export function isQueryFlagEnabled(flagName) {
   return flagSet.has(flagName)
 }
 
+const mediaSourceSupported =
+  !!window.MediaSource && !isQueryFlagEnabled('test-no-media-source')
+
 function createAtom(v) {
   const a = {
     listeners: new Set(),
@@ -42,7 +45,9 @@ function useAtom(a) {
 }
 
 let sid = createAtom('')
+let fallbackListenUrl = createAtom('')
 let welcomeHtmlAtom = createAtom('')
+let actionDelayAtom = createAtom(0)
 let nameAsked = false
 let listenerName = createAtom(localStorage.jamulusLoungeListenerName || '')
 let getActionDelay = () => 0
@@ -59,9 +64,11 @@ eventSource.addEventListener('message', (event) => {
   for (const listener of dataListeners) {
     listener(data)
   }
+  const actionDelay = getActionDelay()
+  actionDelayAtom.value = actionDelay
   setTimeout(() => {
     handleData(data)
-  }, getActionDelay())
+  }, actionDelay)
 })
 
 function handleData(data) {
@@ -274,6 +281,7 @@ function ensureName(forceAsk = true) {
 function Player() {
   const [listening, setListening] = useState(false)
   const [recorders, setRecorders] = useState([])
+  const currentFallbackListenUrl = useAtom(fallbackListenUrl)
   const currentSid = useAtom(sid)
   const toggleListen = () => {
     const nextListening = !listening
@@ -297,23 +305,30 @@ function Player() {
   }
   return html`<div class="d-flex flex-column gap-2">
     <div class="d-flex gap-2 justify-content-center">
-      ${listening
-        ? html`<button class="btn btn-secondary" onClick=${toggleListen}>
-            Stop Listening
-          </button>`
-        : html`<button class="btn btn-primary" onClick=${toggleListen}>
-            Listen
-          </button>`}
-      ${listening && html`<${Listener} />`}
-      <button class="btn btn-danger" onClick=${createRecorder}>Record</button>
+      ${currentFallbackListenUrl
+        ? html`<${FallbackListener} url=${currentFallbackListenUrl} />`
+        : html`
+            ${listening
+              ? html`<button class="btn btn-secondary" onClick=${toggleListen}>
+                  Stop Listening
+                </button>`
+              : html`<button class="btn btn-primary" onClick=${toggleListen}>
+                  Listen
+                </button>`}
+            ${listening && html`<${Listener} />`}
+            <button class="btn btn-danger" onClick=${createRecorder}>
+              Record
+            </button>
+          `}
     </div>
+    ${!!listening && html`<${ActionDelayView} />`}
     ${!!listening &&
     !currentSid &&
+    !fallbackListenUrl &&
     html`<div class="text-danger text-center">
       You have been disconnected from the server. Please
       ${recorders.length > 0 ? ' download all the recordings, ' : ' '}refresh
-      the page and try again later. Please note that
-      <strong>iOS is not supported.</strong>
+      the page and try again later.
     </div>`}
     ${recorders.length > 0 &&
     html`<div class="d-flex flex-column gap-2 mt-3">
@@ -330,6 +345,16 @@ function Player() {
 function Listener() {
   const ref = useRef()
   useEffect(() => {
+    if (!mediaSourceSupported) {
+      fallbackListenUrl.value =
+        server +
+        '/mp3?' +
+        new URLSearchParams({
+          name: listenerName.value,
+          sid: crypto.randomUUID(),
+        })
+      return
+    }
     const audioEl = ref.current
     const stream = new TransformStream()
     const writer = stream.writable.getWriter()
@@ -366,6 +391,31 @@ function Listener() {
     }
   }, [])
   return html`<audio ref=${ref} />`
+}
+
+function FallbackListener({ url }) {
+  const ref = useRef()
+  useEffect(() => {
+    const audioEl = ref.current
+    getActionDelay = createGetActionDelay(audioEl)
+    return () => {
+      getActionDelay = () => 0
+    }
+  }, [])
+  return html`<div class="text-center">
+    <audio ref=${ref} src=${url} controls autoplay /><br />
+    Note: The audio may have a lot of delay and may not be in sync with the
+    chat.
+  </div>`
+}
+
+function ActionDelayView() {
+  const actionDelay = useAtom(actionDelayAtom)
+  return actionDelay > 0
+    ? html`<div class="text-muted text-center">
+        <small>Stream latency: ${(actionDelay / 1000).toFixed(1)}s</small>
+      </div>`
+    : null
 }
 
 function createGetActionDelay(audioEl) {
