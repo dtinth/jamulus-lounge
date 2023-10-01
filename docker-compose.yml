@@ -3,6 +3,7 @@ services:
     image: ghcr.io/dtinth/gojam:main
     command: gojamclient -name lobby -server 127.0.0.1:22124 -apiserver 127.0.0.1:9999 -mp3 -vad
     network_mode: host
+    restart: always
   server:
     image: node:16
     working_dir: /app/server
