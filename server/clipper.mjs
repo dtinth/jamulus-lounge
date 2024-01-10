@@ -332,7 +332,7 @@ async function generateAndUploadClipFiles() {
 
   const base =
     'clips/' +
-    new Date(clip.timestamp - 60e3 * new Date().getTimezoneOffset())
+    new Date(Date.now() - 60e3 * new Date().getTimezoneOffset())
       .toISOString()
       .replace(/:/g, '-')
       .replace(/\./, '-')
