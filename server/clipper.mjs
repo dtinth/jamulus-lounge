@@ -237,9 +237,21 @@ eventSource.addEventListener('message', (event) => {
       if (message.match(/>\s+\/clip\s*$/)) {
         generateClipMessage()
       } else if (message.match(/>\s+\/on\s*$/)) {
-        enable()
+        if (enable()) {
+          sendChat(
+            'clipper is now active. type "/clip" to save the previous 10 minute. type "/off" to deactivate.',
+          ).catch((e) => {
+            fastify.log.error({ err: e }, 'Error sending chat message')
+          })
+        }
       } else if (message.match(/>\s+\/off\s*$/)) {
-        disable()
+        if (disable()) {
+          sendChat(
+            'clipper is now deactivated. type "/on" to turn it back on.',
+          ).catch((e) => {
+            fastify.log.error({ err: e }, 'Error sending chat message')
+          })
+        }
       }
     }
   }
@@ -365,7 +377,7 @@ let lastClipMessage = 0
 async function generateClipMessage() {
   try {
     if (!enabled) {
-      await sendChat('not recording. to start recording, type: "/on" in chat.')
+      await sendChat('clipper is not active. type "/on" to activate.')
       return
     }
     if (Date.now() - lastClipMessage < 60e3) {
@@ -382,6 +394,9 @@ async function generateClipMessage() {
     lastClipMessage = Date.now()
     await sendChat(clip.replayUrl)
   } catch (e) {
+    await sendChat('sorry, there is an error.').catch((e) => {
+      fastify.log.error({ err: e }, 'Error sending chat message')
+    })
     fastify.log.error({ err: e }, 'Error generating clip')
   }
 }
