@@ -380,18 +380,18 @@ async function generateClipMessage() {
       await sendChat('clipper is not active. type "/on" to activate.')
       return
     }
-    if (Date.now() - lastClipMessage < 60e3) {
+    if (Date.now() - lastClipMessage < 10e3) {
       fastify.log.info('clip message rate limit')
-      await sendChat('sorry, cannot clip more than once per minute.')
+      await sendChat('sorry, please wait 10 seconds between clips.')
       return
     }
+    lastClipMessage = Date.now()
     const clip = await generateAndUploadClipFiles()
     if (!clip) {
       fastify.log.info('no clip available')
       await sendChat('sorry, no clip data available.')
       return
     }
-    lastClipMessage = Date.now()
     await sendChat(clip.replayUrl)
   } catch (e) {
     await sendChat('sorry, there is an error.').catch((e) => {
