@@ -19,22 +19,25 @@ fastify.register(fastifyReplyFrom, {
   base: 'http://localhost:9999',
 })
 
+const state = {}
 const listeners = new Map()
 const logger = fastify.log
 const client = axios.create({ baseURL: 'http://localhost:9999' })
-let lastName = ''
+let lastKey = ''
 
 async function worker() {
   try {
     const name = `  lobby [${listeners.size}]  `
-    if (name === lastName) return
+    const instrument = state.recording ? 23 : 24
+    const key = [name, instrument].join(':')
+    if (key === lastKey) return
     await client.patch('/channel-info', {
-      name: name,
+      name,
       skillLevel: 3,
-      instrument: 24,
+      instrument,
     })
     logger.info(`Set client name to "${name}"`)
-    lastName = name
+    lastKey = name
   } catch (err) {
     logger.error({ err })
   }
@@ -106,4 +109,21 @@ fastify.get('/listeners', async (request, reply) => {
   }))
 })
 
+const adminFastify = Fastify({
+  logger: {
+    transport: {
+      target: 'pino-pretty',
+    },
+  },
+})
+
+adminFastify.get('/state', async (request, reply) => {
+  return state
+})
+adminFastify.patch('/state', async (request, reply) => {
+  Object.assign(state, request.body)
+  return state
+})
+
 fastify.listen({ port: 9998, host: '127.0.0.1' })
+adminFastify.listen({ port: 9996, host: '127.0.0.1' })
