@@ -386,6 +386,7 @@ async function generateClipMessage() {
       return
     }
     lastClipMessage = Date.now()
+    await sendChat('generating clip... please wait!')
     const clip = await generateAndUploadClipFiles()
     if (!clip) {
       fastify.log.info('no clip available')
