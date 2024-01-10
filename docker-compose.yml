@@ -5,7 +5,7 @@ services:
     network_mode: host
     restart: always
   server:
-    image: node:16
+    image: node:20-alpine
     working_dir: /app/server
     init: true
     network_mode: host
@@ -16,7 +16,7 @@ services:
       - ./public:/app/public
       - node_modules:/app/node_modules
   clipper:
-    image: node:16
+    image: node:20-alpine
     working_dir: /app/server
     init: true
     network_mode: host
