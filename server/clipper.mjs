@@ -1,11 +1,11 @@
+import archiver from 'archiver'
+import axios from 'axios'
+import EventSource from 'eventsource'
 import Fastify from 'fastify'
+import { createWriteStream } from 'fs'
 import http from 'http'
 import { Readable } from 'stream'
-import EventSource from 'eventsource'
-import archiver from 'archiver'
 import { pipeline } from 'stream/promises'
-import { createWriteStream } from 'fs'
-import axios from 'axios'
 
 const MAX_CLIP_TIME = 600e3
 
@@ -330,8 +330,9 @@ async function generateAndUploadClipFiles() {
     .map((event) => JSON.stringify(event))
     .join('\n')
 
+  const clipNamespace = process.env.CLIPPER_UPLOAD_NAMESPACE || 'clips'
   const base =
-    'clips/' +
+    `${clipNamespace}/` +
     new Date(Date.now() - 60e3 * new Date().getTimezoneOffset())
       .toISOString()
       .replace(/:/g, '-')
