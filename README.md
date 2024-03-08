@@ -30,3 +30,29 @@ cp server/config.example.json server/config.json
 # Create welcome message
 echo Welcome > public/welcome.html
 ```
+
+## Clipper configuration
+
+Deploy an [upload-endpoint](https://github.com/dtinth/upload-endpoint) and configure as follows:
+
+```yaml
+# docker-compose.override.yml
+services:
+  clipper:
+    env_file: .env
+```
+
+```sh
+CLIPPER_UPLOAD_URL=
+CLIPPER_UPLOAD_KEY=
+```
+
+## Reverse proxy configuration
+
+Caddyfile:
+
+```
+your.domain {
+        reverse_proxy localhost:9998
+}
+```
