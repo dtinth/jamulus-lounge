@@ -31,9 +31,9 @@ cp server/config.example.json server/config.json
 echo Welcome > public/welcome.html
 ```
 
-## Clipper configuration
+## Clipper configuration (Optional)
 
-Deploy an [upload-endpoint](https://github.com/dtinth/upload-endpoint) and configure as follows:
+[Clipper](https://mjth.live/clipper/) is an optional feature for `jamulus-lounge` that continuously records 10 minutes of audio. Jam participants can export the recorded audio. This is an advanced feature that is not well documented yet. To set this up, first deploy an [upload-endpoint](https://github.com/dtinth/upload-endpoint) and configure this project as follows to activate clipper:
 
 ```yaml
 # docker-compose.override.yml
