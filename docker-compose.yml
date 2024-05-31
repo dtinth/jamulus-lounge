@@ -1,7 +1,7 @@
 services:
   gojam:
     image: ghcr.io/dtinth/gojam:main
-    command: gojamclient -name lobby -server ${JAMULUS_SERVER:-127.0.0.1:22124} -apiserver 127.0.0.1:${GOJAM_API_PORT:9999} -mp3 -vad
+    command: gojamclient -name lobby -server ${JAMULUS_SERVER:-127.0.0.1:22124} -apiserver 127.0.0.1:${GOJAM_API_PORT:-9999} -mp3 -vad
     network_mode: host
     restart: always
   server:
