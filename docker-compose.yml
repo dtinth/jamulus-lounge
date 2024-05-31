@@ -1,7 +1,7 @@
 services:
   gojam:
     image: ghcr.io/dtinth/gojam:main
-    command: gojamclient -name lobby -server 127.0.0.1:22124 -apiserver 127.0.0.1:9999 -mp3 -vad
+    command: gojamclient -name lobby -server ${JAMULUS_SERVER:-127.0.0.1:22124} -apiserver 127.0.0.1:${GOJAM_API_PORT:9999} -mp3 -vad
     network_mode: host
     restart: always
   server:
@@ -15,6 +15,9 @@ services:
       - ./server:/app/server
       - ./public:/app/public
       - node_modules:/app/node_modules
+    env_file:
+      - path: .env
+        required: false
   clipper:
     image: node:20-alpine
     working_dir: /app/server
@@ -26,5 +29,8 @@ services:
       - ./server:/app/server
       - ./public:/app/public
       - node_modules:/app/node_modules
+    env_file:
+      - path: .env
+        required: false
 volumes:
   node_modules:
