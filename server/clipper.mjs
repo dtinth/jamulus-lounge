@@ -239,7 +239,7 @@ eventSource.addEventListener('message', (event) => {
     const { id, message } = data.newChatMessage
     if (!seenId.has(id)) {
       seenId.add(id)
-      if (message.match(/>\s+\/clip\s*$/)) {
+      if (message.match(/>\s+\/(?:clip|var)\s*$/)) {
         generateClipMessage()
       } else if (message.match(/>\s+\/on\s*$/)) {
         if (enable()) {
