@@ -7,7 +7,10 @@ import http from 'http'
 import { Readable } from 'stream'
 import { pipeline } from 'stream/promises'
 import {
+  GOJAM_API_HOST,
   GOJAM_API_PORT,
+  LISTEN_HOST,
+  LOUNGE_ADMIN_HOST,
   LOUNGE_ADMIN_PORT,
   LOUNGE_CLIPPER_PORT,
 } from './env.mjs'
@@ -172,7 +175,7 @@ class EventBuffer {
 const clipBuffer = new ClipBuffer()
 const eventBuffer = new EventBuffer()
 
-http.get(`http://localhost:${GOJAM_API_PORT}/mp3`, async (res) => {
+http.get(`http://${GOJAM_API_HOST}:${GOJAM_API_PORT}/mp3`, async (res) => {
   if (res.statusCode !== 200) {
     throw new Error('Bad status code')
   }
@@ -186,10 +189,10 @@ http.get(`http://localhost:${GOJAM_API_PORT}/mp3`, async (res) => {
 
 async function worker() {
   try {
-    const state = await axios.get(`http://localhost:${LOUNGE_ADMIN_PORT}/state`)
+    const state = await axios.get(`http://${LOUNGE_ADMIN_HOST}:${LOUNGE_ADMIN_PORT}/state`)
     if (state.data?.recording !== enabled) {
       logger.info(`Setting recording to ${enabled}`)
-      await axios.patch(`http://localhost:${LOUNGE_ADMIN_PORT}/state`, {
+      await axios.patch(`http://${LOUNGE_ADMIN_HOST}:${LOUNGE_ADMIN_PORT}/state`, {
         recording: enabled,
       })
     }
@@ -221,7 +224,7 @@ function disable() {
   return true
 }
 
-const eventSource = new EventSource(`http://localhost:${GOJAM_API_PORT}/events`)
+const eventSource = new EventSource(`http://${GOJAM_API_HOST}:${GOJAM_API_PORT}/events`)
 let currentState = {}
 const seenId = new Set()
 eventSource.addEventListener('message', (event) => {
@@ -447,7 +450,7 @@ fastify.get('/clip', async (request, reply) => {
   return reply.send(stream)
 })
 
-fastify.listen({ port: LOUNGE_CLIPPER_PORT, host: '127.0.0.1' })
+fastify.listen({ port: LOUNGE_CLIPPER_PORT, host: LISTEN_HOST })
 async function sendChat(message) {
-  await axios.post(`http://localhost:${GOJAM_API_PORT}/chat`, { message })
+  await axios.post(`http://${GOJAM_API_HOST}:${GOJAM_API_PORT}/chat`, { message })
 }

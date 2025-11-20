@@ -5,7 +5,9 @@ import Fastify from 'fastify'
 import fs from 'fs'
 import url from 'url'
 import {
+  GOJAM_API_HOST,
   GOJAM_API_PORT,
+  LISTEN_HOST,
   LOUNGE_ADMIN_PORT,
   LOUNGE_SERVER_PORT,
 } from './env.mjs'
@@ -21,13 +23,13 @@ fastify.register(fastifyStatic, {
   root: url.fileURLToPath(new URL('../public', import.meta.url)),
 })
 fastify.register(fastifyReplyFrom, {
-  base: `http://localhost:${GOJAM_API_PORT}`,
+  base: `http://${GOJAM_API_HOST}:${GOJAM_API_PORT}`,
 })
 
 const state = {}
 const listeners = new Map()
 const logger = fastify.log
-const client = axios.create({ baseURL: `http://localhost:${GOJAM_API_PORT}` })
+const client = axios.create({ baseURL: `http://${GOJAM_API_HOST}:${GOJAM_API_PORT}` })
 let lastKey = ''
 
 async function worker() {
@@ -130,5 +132,5 @@ adminFastify.patch('/state', async (request, reply) => {
   return state
 })
 
-fastify.listen({ port: LOUNGE_SERVER_PORT, host: '127.0.0.1' })
-adminFastify.listen({ port: LOUNGE_ADMIN_PORT, host: '127.0.0.1' })
+fastify.listen({ port: LOUNGE_SERVER_PORT, host: LISTEN_HOST })
+adminFastify.listen({ port: LOUNGE_ADMIN_PORT, host: LISTEN_HOST })
