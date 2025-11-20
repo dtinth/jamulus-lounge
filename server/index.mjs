@@ -6,6 +6,7 @@ import fs from 'fs'
 import url from 'url'
 import {
   GOJAM_API_PORT,
+  LISTEN_HOST,
   LOUNGE_ADMIN_PORT,
   LOUNGE_SERVER_PORT,
 } from './env.mjs'
@@ -130,5 +131,5 @@ adminFastify.patch('/state', async (request, reply) => {
   return state
 })
 
-fastify.listen({ port: LOUNGE_SERVER_PORT, host: '127.0.0.1' })
-adminFastify.listen({ port: LOUNGE_ADMIN_PORT, host: '127.0.0.1' })
+fastify.listen({ port: LOUNGE_SERVER_PORT, host: LISTEN_HOST })
+adminFastify.listen({ port: LOUNGE_ADMIN_PORT, host: LISTEN_HOST })

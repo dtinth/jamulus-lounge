@@ -8,6 +8,7 @@ import { Readable } from 'stream'
 import { pipeline } from 'stream/promises'
 import {
   GOJAM_API_PORT,
+  LISTEN_HOST,
   LOUNGE_ADMIN_PORT,
   LOUNGE_CLIPPER_PORT,
 } from './env.mjs'
@@ -447,7 +448,7 @@ fastify.get('/clip', async (request, reply) => {
   return reply.send(stream)
 })
 
-fastify.listen({ port: LOUNGE_CLIPPER_PORT, host: '127.0.0.1' })
+fastify.listen({ port: LOUNGE_CLIPPER_PORT, host: LISTEN_HOST })
 async function sendChat(message) {
   await axios.post(`http://localhost:${GOJAM_API_PORT}/chat`, { message })
 }

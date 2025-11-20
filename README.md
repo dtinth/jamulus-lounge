@@ -50,6 +50,9 @@ LOUNGE_SERVER_PORT=
 # The port to run the admin server on (default: 9996)
 LOUNGE_ADMIN_PORT=
 
+# The host address to listen on (default: 127.0.0.1)
+LISTEN_HOST=
+
 # -- Clipper settings (see below) --
 # The port to run the clipper server on (default: 9997)
 LOUNGE_CLIPPER_PORT=
