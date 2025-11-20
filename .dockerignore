@@ -1,0 +1,9 @@
+.git
+.gitignore
+README.md
+docker-compose.yml
+.env
+.tool-versions
+.prettierrc.yml
+server/config.json
+public/welcome.html
