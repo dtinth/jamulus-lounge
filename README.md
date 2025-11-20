@@ -44,11 +44,17 @@ JAMULUS_SERVER=
 # The port to run gojam API server on (default: 9999)
 GOJAM_API_PORT=
 
+# The host of the gojam API server (default: localhost)
+GOJAM_API_HOST=
+
 # The port to run the public-facing server on (default: 9998)
 LOUNGE_SERVER_PORT=
 
 # The port to run the admin server on (default: 9996)
 LOUNGE_ADMIN_PORT=
+
+# The host of the admin server (default: localhost)
+LOUNGE_ADMIN_HOST=
 
 # The host address to listen on (default: 127.0.0.1)
 LISTEN_HOST=

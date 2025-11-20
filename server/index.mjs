@@ -5,6 +5,7 @@ import Fastify from 'fastify'
 import fs from 'fs'
 import url from 'url'
 import {
+  GOJAM_API_HOST,
   GOJAM_API_PORT,
   LISTEN_HOST,
   LOUNGE_ADMIN_PORT,
@@ -22,13 +23,13 @@ fastify.register(fastifyStatic, {
   root: url.fileURLToPath(new URL('../public', import.meta.url)),
 })
 fastify.register(fastifyReplyFrom, {
-  base: `http://localhost:${GOJAM_API_PORT}`,
+  base: `http://${GOJAM_API_HOST}:${GOJAM_API_PORT}`,
 })
 
 const state = {}
 const listeners = new Map()
 const logger = fastify.log
-const client = axios.create({ baseURL: `http://localhost:${GOJAM_API_PORT}` })
+const client = axios.create({ baseURL: `http://${GOJAM_API_HOST}:${GOJAM_API_PORT}` })
 let lastKey = ''
 
 async function worker() {
