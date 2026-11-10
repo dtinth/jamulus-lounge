@@ -10,6 +10,7 @@ import {
   LISTEN_HOST,
   LOUNGE_ADMIN_PORT,
   LOUNGE_SERVER_PORT,
+  MAX_STREAMS_PER_IP,
 } from './env.mjs'
 
 const fastify = Fastify({
@@ -28,6 +29,19 @@ fastify.register(fastifyReplyFrom, {
 
 const state = {}
 const listeners = new Map()
+
+// Number of concurrent /mp3 streams per client IP address, so that one client
+// cannot exhaust the server by opening a large number of streams.
+const streamsByIp = new Map()
+
+// The lounge normally runs behind a reverse proxy (see README), so the socket
+// peer is the proxy. Use the first X-Forwarded-For entry, which is the client
+// address as set by the proxy (Caddy overwrites the header by default).
+function getClientIp(request) {
+  const forwarded = String(request.headers['x-forwarded-for'] || '')
+  return forwarded.split(',')[0].trim() || request.socket.remoteAddress || ''
+}
+
 const logger = fastify.log
 const client = axios.create({ baseURL: `http://${GOJAM_API_HOST}:${GOJAM_API_PORT}` })
 let lastKey = ''
@@ -85,10 +99,20 @@ fastify.get('/mp3', (request, reply) => {
   if (!name) {
     return reply.code(400).send('Missing name')
   }
+  const ip = getClientIp(request)
+  const streams = streamsByIp.get(ip) || 0
+  if (MAX_STREAMS_PER_IP > 0 && streams >= MAX_STREAMS_PER_IP) {
+    request.log.warn(`Too many streams from ${ip} (${streams}), refusing ${name} (${sid})`)
+    return reply.code(429).send('Too many streams from your address')
+  }
+  streamsByIp.set(ip, streams + 1)
   listeners.set(sid, { name })
   request.log.info(`New listener: ${name} (${sid})`)
   reply.raw.on('close', () => {
     listeners.delete(sid)
+    const left = (streamsByIp.get(ip) || 1) - 1
+    if (left > 0) streamsByIp.set(ip, left)
+    else streamsByIp.delete(ip)
     request.log.info(`Listener disconnected: ${name} (${sid})`)
   })
   reply.from('/mp3')
