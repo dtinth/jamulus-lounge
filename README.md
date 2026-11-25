@@ -59,6 +59,10 @@ LOUNGE_ADMIN_HOST=
 # The host address to listen on (default: 127.0.0.1)
 LISTEN_HOST=
 
+# Maximum concurrent audio streams per client IP address, 0 to disable (default: 3)
+# The client IP is read from the X-Forwarded-For header set by the reverse proxy
+MAX_STREAMS_PER_IP=
+
 # -- Clipper settings (see below) --
 # The port to run the clipper server on (default: 9997)
 LOUNGE_CLIPPER_PORT=

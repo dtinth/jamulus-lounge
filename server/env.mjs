@@ -5,3 +5,4 @@ export const LOUNGE_CLIPPER_PORT = process.env.LOUNGE_CLIPPER_PORT || 9997
 export const LOUNGE_ADMIN_PORT = process.env.LOUNGE_ADMIN_PORT || 9996
 export const LOUNGE_ADMIN_HOST = process.env.LOUNGE_ADMIN_HOST || 'localhost'
 export const LISTEN_HOST = process.env.LISTEN_HOST || '127.0.0.1'
+export const MAX_STREAMS_PER_IP = +(process.env.MAX_STREAMS_PER_IP || 3)
