@@ -24,6 +24,11 @@ fastify.register(fastifyStatic, {
 })
 fastify.register(fastifyReplyFrom, {
   base: `http://${GOJAM_API_HOST}:${GOJAM_API_PORT}`,
+  // gojam's -vad sends no bytes while the room is silent, and undici's default
+  // 30 s bodyTimeout would end every /mp3 stream after 30 s of silence.
+  // headersTimeout stays at 30 s: a request whose listener leaves before the
+  // headers arrive is not cancelled upstream, so it should not wait forever.
+  undici: { bodyTimeout: 0 },
 })
 
 const state = {}
